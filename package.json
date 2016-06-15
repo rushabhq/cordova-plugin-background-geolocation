@@ -1,12 +1,13 @@
 {
   "name": "cordova-plugin-mauron85-background-geolocation",
-  "version": "2.0.0-rc.3",
-  "description": "Cordova Background Geolocation Plugin",
+  "version": "1.0.1",
+  "description": "Cordova Background GeoLocation Plugin",
   "cordova": {
     "id": "cordova-plugin-mauron85-background-geolocation",
     "platforms": [
       "android",
-      "ios"
+      "ios",
+      "wp8"
     ]
   },
   "repository": {
@@ -21,6 +22,7 @@
     "ecosystem:cordova",
     "cordova-android",
     "cordova-ios",
+    "cordova-wp8",
     "cordova",
     "phonegap"
   ],

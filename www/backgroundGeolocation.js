@@ -10,21 +10,19 @@
  */
 
 var exec = require('cordova/exec');
-var emptyFnc = function(){};
 
-var backgroundGeolocation = {
+var backgroundGeoLocation = {
+    /**
+     * @property {Object} stationaryRegion
+     */
+    stationaryRegion: null,
 
     /**
-     * @property {Object} provider
+     * @property {Object} service
      */
-    provider: {
-        ANDROID_DISTANCE_FILTER_PROVIDER: 0,
-        ANDROID_ACTIVITY_PROVIDER: 1
-    },
-    
-    mode: {
-        BACKGROUND: 0,
-        FOREGROUND: 1
+    service: {
+        ANDROID_DISTANCE_FILTER: 0,
+        ANDROID_FUSED_LOCATION: 1
     },
 
     accuracy: {
@@ -40,106 +38,123 @@ var backgroundGeolocation = {
     config: {},
 
     configure: function(success, failure, config) {
-        exec(success || emptyFnc,
-            failure || emptyFnc,
-            'BackgroundGeolocation',
-            'configure',
-            [config]
+        this.config = config || {};
+        var stationaryRadius      = (config.stationaryRadius >= 0) ? config.stationaryRadius : 50, // meters
+            distanceFilter        = (config.distanceFilter >= 0) ? config.distanceFilter   : 500, // meters
+            locationTimeout       = (config.locationTimeout >= 0) ? config.locationTimeout  : 60, // seconds
+            desiredAccuracy       = (config.desiredAccuracy >= 0) ? config.desiredAccuracy  : this.accuracy.MEDIUM,
+            debug                 = config.debug || false,
+            notificationTitle     = config.notificationTitle || 'Background tracking',
+            notificationText      = config.notificationText || 'ENABLED',
+            notificationIcon      = config.notificationIcon,
+            notificationIconColor = config.notificationIconColor,
+            activityType          = config.activityType || 'OTHER',
+            stopOnTerminate       = config.stopOnTerminate || false,
+            locationService       = config.locationService || this.service.ANDROID_DISTANCE_FILTER,
+            //Android FusedLocation config
+            interval              = (config.interval >= 0) ? config.interval : locationTimeout * 1000, // milliseconds
+            fastestInterval       = (config.fastestInterval >= 0) ? config.fastestInterval : 120000, // milliseconds
+            activitiesInterval    = config.activitiesInterval || 1000,
+            stopOnStillActivity   = (config.stopOnStillActivity === false) ? false : true;
+
+        exec(success || function() {},
+            failure || function() {},
+            'BackgroundGeoLocation',
+            'configure', [
+                stationaryRadius,
+                distanceFilter,
+                locationTimeout,
+                desiredAccuracy,
+                debug,
+                notificationTitle,
+                notificationText,
+                activityType,
+                stopOnTerminate,
+                notificationIcon,
+                notificationIconColor,
+                locationService,
+                interval,
+                fastestInterval,
+                activitiesInterval,
+                stopOnStillActivity
+            ]
         );
     },
-
     start: function(success, failure) {
-        exec(success || emptyFnc,
-            failure || emptyFnc,
-            'BackgroundGeolocation',
+        exec(success || function() {},
+            failure || function() {},
+            'BackgroundGeoLocation',
             'start', []);
     },
-
     stop: function(success, failure) {
-        exec(success || emptyFnc,
-            failure || emptyFnc,
-            'BackgroundGeolocation',
+        exec(success || function() {},
+            failure || function() {},
+            'BackgroundGeoLocation',
             'stop', []);
     },
-
     finish: function(success, failure) {
-        exec(success || emptyFnc,
-            failure || emptyFnc,
-            'BackgroundGeolocation',
+        exec(success || function() {},
+            failure || function() {},
+            'BackgroundGeoLocation',
             'finish', []);
     },
-
-    changePace: function(mode, success, failure) {
-        console.log('[Warning]: changePace is deprecated. Use switchMode instead.')
-        this.switchMode(mode, success, failure);
+    changePace: function(isMoving, success, failure) {
+        exec(success || function() {},
+            failure || function() {},
+            'BackgroundGeoLocation',
+            'onPaceChange', [isMoving]);
     },
-
-    switchMode: function(mode, success, failure) {
-        exec(success || emptyFnc,
-            failure || emptyFnc,
-            'BackgroundGeolocation',
-            'switchMode', [mode]);
+    /**
+     * @param {Integer} stationaryRadius
+     * @param {Integer} desiredAccuracy
+     * @param {Integer} distanceFilter
+     * @param {Integer} timeout
+     */
+    setConfig: function(success, failure, config) {
+        this.apply(this.config, config);
+        exec(success || function() {},
+            failure || function() {},
+            'BackgroundGeoLocation',
+            'setConfig', [config]);
     },
-
-    getConfig: function(success, failure) {
-      if (typeof(success) !== 'function') {
-           throw 'BackgroundGeolocation#getConfig requires a success callback';
-      }
-      exec(success,
-          failure || emptyFnc,
-          'BackgroundGeolocation',
-          'getConfig', []);
-    },
-
     /**
      * Returns current stationaryLocation if available.  null if not
      */
     getStationaryLocation: function(success, failure) {
-        if (typeof(success) !== 'function') {
-             throw 'BackgroundGeolocation#getStationaryLocation requires a success callback';
-        }
-        exec(success,
-            failure || emptyFnc,
-            'BackgroundGeolocation',
+        exec(success || function() {},
+            failure || function() {},
+            'BackgroundGeoLocation',
             'getStationaryLocation', []);
     },
-
     /**
      * Add a stationary-region listener.  Whenever the devices enters "stationary-mode", your #success callback will be executed with #location param containing #radius of region
      * @param {Function} success
      * @param {Function} failure [optional] NOT IMPLEMENTED
      */
     onStationary: function(success, failure) {
-        if (typeof(success) !== 'function') {
-             throw 'BackgroundGeolocation#onStationary requires a success callback';
-        }
-        exec(success,
-            failure || emptyFnc,
-            'BackgroundGeolocation',
+        var me = this;
+        success = success || function() {};
+        var callback = function(region) {
+            me.stationaryRegion = region;
+            success.apply(me, arguments);
+        };
+        exec(callback,
+            failure || function() {},
+            'BackgroundGeoLocation',
             'addStationaryRegionListener', []);
     },
 
     isLocationEnabled: function(success, failure) {
-        if (typeof(success) !== 'function') {
-             throw 'BackgroundGeolocation#isLocationEnabled requires a success callback';
-        }
-        exec(success,
-            failure || emptyFnc,
-            'BackgroundGeolocation',
+        exec(success || function() {},
+            failure || function() {},
+            'BackgroundGeoLocation',
             'isLocationEnabled', []);
     },
 
-    showAppSettings: function() {
-        exec(emptyFnc,
-            emptyFnc,
-            'BackgroundGeolocation',
-            'showAppSettings', []);
-    },
-
     showLocationSettings: function() {
-        exec(emptyFnc,
-            emptyFnc,
-            'BackgroundGeolocation',
+        exec(function() {},
+            function() {},
+            'BackgroundGeoLocation',
             'showLocationSettings', []);
     },
 
@@ -148,15 +163,15 @@ var backgroundGeolocation = {
              throw 'BackgroundGeolocation#watchLocationMode requires a success callback';
         }
         exec(success,
-            failure || emptyFnc,
-            'BackgroundGeolocation',
+            failure || function() {},
+            'BackgroundGeoLocation',
             'watchLocationMode', []);
     },
 
     stopWatchingLocationMode: function() {
-        exec(emptyFnc,
-            emptyFnc,
-            'BackgroundGeolocation',
+        exec(function() {},
+            function() {},
+            'BackgroundGeoLocation',
             'stopWatchingLocationMode', []);
     },
 
@@ -165,27 +180,60 @@ var backgroundGeolocation = {
              throw 'BackgroundGeolocation#getLocations requires a success callback';
         }
         exec(success,
-            failure || emptyFnc,
-            'BackgroundGeolocation',
+            failure || function() {},
+            'BackgroundGeoLocation',
             'getLocations', []);
     },
 
     deleteLocation: function(locationId, success, failure) {
-        exec(success || emptyFnc,
-            failure || emptyFnc,
-            'BackgroundGeolocation',
+        exec(success || function() {},
+            failure || function() {},
+            'BackgroundGeoLocation',
             'deleteLocation', [locationId]);
     },
 
     deleteAllLocations: function(success, failure) {
-        exec(success || emptyFnc,
-            failure || emptyFnc,
-            'BackgroundGeolocation',
+        exec(success || function() {},
+            failure || function() {},
+            'BackgroundGeoLocation',
             'deleteAllLocations', []);
+    },
+
+    apply: function(destination, source) {
+        source = source || {};
+        for (var property in source) {
+            if (source.hasOwnProperty(property)) {
+                destination[property] = source[property];
+            }
+        }
+        return destination;
+    },
+
+    getTravelledDistance : function(success,failure){
+        exec(success || function() {},
+            failure || function() {},
+            'BackgroundGeoLocation',
+            'getDistanceTravelled', []);
+    },
+
+    startTrackingDistance : function(success,failure){
+        exec(success || function() {},
+            failure || function() {},
+            'BackgroundGeoLocation',
+            'startDistanceCalculation', []);
+    },
+
+    stopTrackingDistance : function(success,failure){
+        exec(success || function() {},
+            failure || function() {},
+            'BackgroundGeoLocation',
+            'stopDistanceCalculation', []);
     }
+
 };
 
 /* @Deprecated */
-window.backgroundGeoLocation = backgroundGeolocation;
+window.plugins = window.plugins || {};
+window.plugins.backgroundGeoLocation = backgroundGeoLocation;
 
-module.exports = backgroundGeolocation;
+module.exports = backgroundGeoLocation;
